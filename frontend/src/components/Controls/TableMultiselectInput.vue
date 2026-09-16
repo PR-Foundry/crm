@@ -90,9 +90,8 @@ const getLinkField = () => {
       ['Link', 'User'].includes(df.fieldtype),
     )
     if (!linkField.value) {
-      error.value = __(
-        'Table MultiSelect requires a Table with at least one Link field',
-      )
+      error.value =
+        'Table MultiSelect requires a Table with atleast one Link field'
     }
   }
   return linkField.value
@@ -102,7 +101,7 @@ const addValue = (value) => {
   error.value = null
 
   if (values.value.some((row) => row[linkField.value.fieldname] === value)) {
-    error.value = __('Value already exists')
+    error.value = 'Value already exists'
     return
   }
 

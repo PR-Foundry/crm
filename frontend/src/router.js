@@ -103,6 +103,11 @@ const routes = [
     component: () => import('@/pages/CallLogs.vue'),
   },
   {
+    path: '/calendar',
+    name: 'Calendar',
+    component: () => import('@/pages/Calendar.vue'),
+  },
+  {
     path: '/data-import',
     name: 'DataImportList',
     component: () => import('@/pages/DataImport.vue'),
@@ -161,9 +166,6 @@ router.beforeEach(async (to, from, next) => {
       await users.promise
     } catch (error) {
       console.error('Error loading users', error)
-      if (error?.exc_type !== 'PermissionError') {
-        return next(false)
-      }
     }
   }
 
@@ -199,8 +201,6 @@ router.beforeEach(async (to, from, next) => {
 
   if (isLoggedIn && to.name !== 'Not Permitted' && !isCrmUser()) {
     next({ name: 'Not Permitted' })
-  } else if (to.name === 'Not Permitted' && isLoggedIn && isCrmUser()) {
-    next({ name: 'Home' })
   } else if (to.name === 'Home' && isLoggedIn) {
     const { views, getDefaultView } = viewsStore()
     await views.promise
@@ -264,8 +264,8 @@ router.beforeEach(async (to, from, next) => {
       const doctype = doctypeMap[to.name]
       let defaultViewType = 'list'
 
-      let globalDefault = getDefaultView(to.name)
-      if (globalDefault) {
+      let globalDefault = getDefaultView()
+      if (globalDefault && globalDefault.route_name === to.name) {
         defaultViewType = globalDefault.type || 'list'
         if (globalDefault.name && !globalDefault.is_standard) {
           next({

@@ -4,29 +4,13 @@
     class="flex flex-col justify-between gap-2 sm:px-5 px-3 py-4"
   >
     <div class="flex flex-col gap-2">
-      <div class="flex items-center justify-between gap-2">
-        <FadedScrollableDiv
-          class="flex flex-1 items-center overflow-x-auto -ml-1 h-9"
-          orientation="horizontal"
-        >
-          <div
-            v-for="filter in quickFilterList"
-            :key="filter.fieldname"
-            class="m-1 min-w-36"
-          >
-            <QuickFilterField
-              :filter="filter"
-              @applyQuickFilter="(f, v) => applyQuickFilter(f, v)"
-            />
-          </div>
-        </FadedScrollableDiv>
-        <div class="-ml-2 h-[70%] border-l" />
-        <div class="flex shrink-0 gap-2">
-          <Button
-            :tooltip="__('Refresh')"
-            icon="lucide-refresh-ccw"
-            :loading="isLoading"
-            @click="reload()"
+      <div class="flex items-center justify-between gap-2 overflow-x-auto">
+        <div class="flex gap-2">
+          <Filter
+            v-model="list"
+            :doctype="doctype"
+            :default_filters="filters"
+            @update="updateFilter"
           />
           <GroupBy
             v-if="route.params.viewType === 'group_by'"
@@ -35,11 +19,14 @@
             :hideLabel="isMobileView"
             @update="updateGroupBy"
           />
-          <Filter
-            v-model="list"
-            :doctype="doctype"
-            :default_filters="filters"
-            @update="updateFilter"
+        </div>
+
+        <div class="flex gap-2">
+          <Button
+            :tooltip="__('Refresh')"
+            icon="lucide-refresh-ccw"
+            :loading="isLoading"
+            @click="reload()"
           />
           <SortBy
             v-if="route.params.viewType !== 'kanban'"
@@ -534,17 +521,15 @@ function getParams() {
   }
 }
 
-let listResource
-
-listResource = createResource({
+list.value = createResource({
   url: 'crm.api.doc.get_data',
   params: getParams(),
   cache: [props.doctype, route.query.view, route.params.viewType],
   auto: true,
   onSuccess(data) {
     let cv = getView(route.query.view, route.params.viewType, props.doctype)
-    let params = listResource.params || getParams()
-    listResource.params = params
+    let params = list.value.params ? list.value.params : getParams()
+    list.value.params = params
     defaultParams.value = {
       doctype: props.doctype,
       filters: params.filters,
@@ -567,8 +552,8 @@ listResource = createResource({
   },
 })
 
-list.value = listResource
-listResource.params = getParams()
+// createResource leaves `params` null until a fetch passes them explicitly
+list.value.params = getParams()
 
 // Refresh the list when a Domain Enrichment enrichment finishes for this
 // doctype, so newly-filled fields (logo, etc.) show without a manual reload.
@@ -594,15 +579,10 @@ onBeforeUnmount(() => {
 
 const isLoading = computed(() => list.value?.loading)
 
-function getListParams() {
-  if (!listResource.params) listResource.params = getParams()
-  return listResource.params
-}
-
 function reload() {
   if (isLoading.value) return
-  listResource.params = getParams()
-  listResource.reload()
+  list.value.params = getParams()
+  list.value.reload()
 }
 
 const showExportDialog = ref(false)
@@ -869,12 +849,11 @@ const quickFilterOptions = computed(() => {
 
 const quickFilterList = computed(() => {
   let filters = quickFilters.data || []
-  let params = getListParams()
 
   filters.forEach((filter) => {
     filter['value'] = filter.fieldtype == 'Check' ? false : ''
-    if (params?.filters?.[filter.fieldname]) {
-      let value = params.filters[filter.fieldname]
+    if (list.value.params?.filters[filter.fieldname]) {
+      let value = list.value.params.filters[filter.fieldname]
       if (Array.isArray(value)) {
         if (
           (['Check', 'Select', 'Link', 'Date', 'Datetime'].includes(
@@ -916,7 +895,7 @@ function setupNewQuickFilters(filters) {
 }
 
 function applyQuickFilter(filter, value) {
-  let filters = { ...getListParams().filters }
+  let filters = { ...list.value.params.filters }
   let field = filter.fieldname
   if (value) {
     if (
@@ -939,10 +918,10 @@ function updateFilter(filters) {
   if (!defaultParams.value) {
     defaultParams.value = getParams()
   }
-  listResource.params = defaultParams.value
-  listResource.params.filters = filters
+  list.value.params = defaultParams.value
+  list.value.params.filters = filters
   view.value.filters = filters
-  listResource.reload()
+  list.value.reload()
 
   if (!route.query.view) {
     createOrUpdateStandardView()
@@ -1240,7 +1219,7 @@ const viewActions = (view, close) => {
 }
 
 function isDefaultView(v) {
-  let defaultView = getDefaultView(route.name)
+  let defaultView = getDefaultView()
 
   if (!defaultView || !v.name) return false
 
@@ -1366,7 +1345,7 @@ function applyFilter({ event, idx, column, item, firstColumn }) {
   event.stopPropagation()
   event.preventDefault()
 
-  let filters = { ...getListParams().filters }
+  let filters = { ...list.value.params.filters }
 
   let value = item.name ?? item.label ?? item
 
@@ -1391,7 +1370,7 @@ function applyFilter({ event, idx, column, item, firstColumn }) {
 }
 
 function applyLikeFilter() {
-  let filters = { ...getListParams().filters }
+  let filters = { ...list.value.params.filters }
   if (!filters._liked_by) {
     filters['_liked_by'] = ['LIKE', '%@me%']
   } else {

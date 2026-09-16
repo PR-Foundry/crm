@@ -40,19 +40,11 @@
           </Button>
         </template>
       </Dropdown>
-      <Tooltip
-        :disabled="!isLeadConversionDisabled"
-        :text="__('Cannot convert a lost lead to deal')"
-      >
-        <div class="inline-flex">
-          <Button
-            :label="__('Convert to Deal')"
-            variant="solid"
-            :disabled="isLeadConversionDisabled"
-            @click="showConvertToDealModal = true"
-          />
-        </div>
-      </Tooltip>
+      <Button
+        :label="__('Convert to Deal')"
+        variant="solid"
+        @click="showConvertToDealModal = true"
+      />
     </template>
   </LayoutHeader>
   <div v-if="doc.name" class="flex h-full overflow-hidden">
@@ -237,7 +229,6 @@
     v-model="showDeleteLinkedDocModal"
     :doctype="'CRM Lead'"
     :docname="leadId"
-    :title="doc.lead_name"
     name="Leads"
   />
   <LostReasonModal
@@ -257,6 +248,7 @@ import EmailIcon from '@/components/Icons/EmailIcon.vue'
 import Email2Icon from '@/components/Icons/Email2Icon.vue'
 import CommentIcon from '@/components/Icons/CommentIcon.vue'
 import DetailsIcon from '@/components/Icons/DetailsIcon.vue'
+import EventIcon from '@/components/Icons/EventIcon.vue'
 import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
 import TaskIcon from '@/components/Icons/TaskIcon.vue'
 import NoteIcon from '@/components/Icons/NoteIcon.vue'
@@ -306,7 +298,6 @@ import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useActiveTabManager } from '@/composables/useActiveTabManager'
 import { useUnsavedChangesWarning } from '@/composables/useUnsavedChangesWarning'
-import { useVisitedRecords } from '@/composables/useVisitedRecords'
 
 const { brand } = getSettings()
 const { $dialog, $socket, makeCall } = globalStore()
@@ -341,27 +332,21 @@ const {
 const canDelete = computed(() => permissions.data?.permissions?.delete || false)
 
 const doc = computed(() => document.doc || {})
-const isLeadConversionDisabled = computed(
-  () => doc.value.status && getLeadStatus(doc.value.status)?.type === 'Lost',
-)
 
 useUnsavedChangesWarning(() => document.isDirty)
 
-const { markVisited } = useVisitedRecords('CRM Lead')
-
 onMounted(async () => {
   if (document.doc) await triggerOnRender()
-  markVisited(props.leadId)
 })
 
 watch(error, (err) => {
   if (err) {
     errorTitle.value = __(
       err.exc_type == 'DoesNotExistError'
-        ? __('Document not found')
-        : __('Error occurred'),
+        ? 'Document not found'
+        : 'Error occurred',
     )
-    errorMessage.value = __(err.messages?.[0] || __('An error occurred'))
+    errorMessage.value = __(err.messages?.[0] || 'An error occurred')
   } else {
     errorTitle.value = ''
     errorMessage.value = ''
@@ -458,6 +443,11 @@ const tabs = computed(() => {
       icon: DetailsIcon,
     },
     {
+      name: 'Events',
+      label: __('Events'),
+      icon: EventIcon,
+    },
+    {
       name: 'Calls',
       label: __('Calls'),
       icon: PhoneIcon,
@@ -513,12 +503,13 @@ function updateField(name, value) {
 
   document.save.submit(null, {
     onSuccess: () => (reload.value = true),
-    onError: () => {
+    onError: (err) => {
       if (Array.isArray(name)) {
         name.forEach((field) => (doc.value[field] = oldValues[field]))
       } else {
         doc.value[name] = oldValues
       }
+      toast.error(err.messages?.[0] || __('Error updating field'))
     },
   })
 }

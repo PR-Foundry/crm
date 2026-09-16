@@ -300,11 +300,8 @@ def get_data(
 	data = []
 	_list = get_controller(doctype)
 	default_rows = []
-	default_column_keys = []
 	if hasattr(_list, "default_list_data"):
-		default_list_data = _list.default_list_data()
-		default_rows = default_list_data.get("rows")
-		default_column_keys = [column.get("key") for column in default_list_data.get("columns", [])]
+		default_rows = _list.default_list_data().get("rows")
 
 	meta = frappe.get_meta(doctype)
 
@@ -340,30 +337,23 @@ def get_data(
 			rows = default_rows
 			columns = _list.default_list_data().get("columns")
 
-		visible_columns = []
+		# check if rows has all keys from columns if not add them
 		for column in columns:
-			key = column.get("key")
-			# hidden fields are dropped unless the doctype lists them in its own defaults
-			column_meta = meta.get_field(key)
-			if column_meta and column_meta.get("hidden") and key not in default_column_keys:
-				continue
-
-			if key not in rows:
-				rows.append(key)
+			if column.get("key") not in rows:
+				rows.append(column.get("key"))
 			column["label"] = _(column.get("label"))
 
-			if key == "_liked_by" and column.get("width") == "10rem":
+			if column.get("key") == "_liked_by" and column.get("width") == "10rem":
 				column["width"] = "50px"
 
-			visible_columns.append(column)
-		columns = visible_columns
+			# remove column if column.hidden is True
+			column_meta = meta.get_field(column.get("key"))
+			if column_meta and column_meta.get("hidden"):
+				columns.remove(column)
 
 		# check if rows has group_by_field if not add it
 		if group_by_field and group_by_field not in rows:
 			rows.append(group_by_field)
-
-		if meta.track_seen and "_seen" not in rows:
-			rows.append("_seen")
 
 		data = (
 			frappe.get_list(
@@ -613,13 +603,6 @@ def remove_assignments(doctype: str, name: str, assignees: str | list, ignore_pe
 			status="Cancelled",
 			ignore_permissions=ignore_permissions,
 		)
-
-
-@frappe.whitelist()
-def add_seen(doctype: str, name: str):
-	doc = frappe.get_doc(doctype, name)
-	doc.check_permission("read")
-	doc.add_seen()
 
 
 @frappe.whitelist()

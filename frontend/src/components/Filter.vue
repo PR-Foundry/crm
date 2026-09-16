@@ -173,7 +173,6 @@ import {
 } from 'frappe-ui'
 import { h, computed, onMounted } from 'vue'
 import { isMobileView } from '@/composables/settings'
-import { getFormat } from '@/utils'
 
 const typeCheck = ['Check']
 const typeLink = ['Link', 'Dynamic Link']
@@ -412,11 +411,11 @@ function getValueControl(f) {
       trigger: 'button',
       options: [
         {
-          label: __('Set'),
+          label: 'Set',
           value: 'set',
         },
         {
-          label: __('Not Set'),
+          label: 'Not Set',
           value: 'not set',
         },
       ],
@@ -452,11 +451,7 @@ function getValueControl(f) {
   } else if (typeNumber.includes(fieldtype)) {
     return h(FormControl, { type: 'number' })
   } else if (typeDate.includes(fieldtype) && operator == 'between') {
-    return h(DateRangePicker, {
-      value: f.value,
-      iconLeft: '',
-      format: getFormat('', '', true, false, false),
-    })
+    return h(DateRangePicker, { value: f.value, iconLeft: '' })
   } else if (typeDuration.includes(fieldtype)) {
     return h(DurationInput, { value: f.value })
   } else if (typeRating.includes(fieldtype)) {
@@ -469,10 +464,6 @@ function getValueControl(f) {
     return h(fieldtype == 'Date' ? DatePicker : DateTimePicker, {
       value: f.value,
       iconLeft: '',
-      format:
-        fieldtype == 'Date'
-          ? getFormat('', '', true, false, false)
-          : getFormat('', '', true, true, false),
     })
   } else {
     return h(FormControl, { type: 'text' })

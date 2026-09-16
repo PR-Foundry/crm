@@ -150,7 +150,6 @@
                             : row[field.options]
                         "
                         :filters="field.filters"
-                        :disabled="Boolean(field.disabled)"
                         :onCreate="
                           (value, close) => field.create(v, field, row, close)
                         "
@@ -163,7 +162,6 @@
                         :doctype="field.options"
                         :filters="field.filters"
                         :placeholder="field.placeholder"
-                        :disabled="Boolean(field.disabled)"
                         :hideMe="true"
                         @change="(v) => fieldChange(v, field, row)"
                       >
@@ -196,10 +194,7 @@
                         <Checkbox
                           v-model="row[field.fieldname]"
                           class="cursor-pointer duration-300"
-                          :disabled="
-                            !gridSettings.editable_grid ||
-                            Boolean(field.disabled)
-                          "
+                          :disabled="!gridSettings.editable_grid"
                           @change="
                             (e) => fieldChange(e.target.checked, field, row)
                           "
@@ -248,14 +243,13 @@
                         type="select"
                         variant="outline"
                         :options="field.options"
-                        :disabled="Boolean(field.disabled)"
                         @update:modelValue="(e) => fieldChange(e, field, row)"
                       />
                       <Password
                         v-else-if="field.fieldtype === 'Password'"
                         variant="outline"
                         :value="row[field.fieldname]"
-                        :disabled="Boolean(field.disabled)"
+                        :disabled="Boolean(field.read_only)"
                         @change="fieldChange($event.target.value, field, row)"
                       />
                       <FormattedInput
@@ -264,7 +258,7 @@
                         type="text"
                         variant="outline"
                         :value="row[field.fieldname] || '0'"
-                        :disabled="Boolean(field.disabled)"
+                        :disabled="Boolean(field.read_only)"
                         @change="fieldChange($event.target.value, field, row)"
                       />
                       <FormattedInput
@@ -274,7 +268,7 @@
                         variant="outline"
                         :value="getFloatWithPrecision(field.fieldname, row)"
                         :formattedValue="(row[field.fieldname] || '0') + '%'"
-                        :disabled="Boolean(field.disabled)"
+                        :disabled="Boolean(field.read_only)"
                         @change="
                           fieldChange(flt($event.target.value), field, row)
                         "
@@ -286,7 +280,7 @@
                         variant="outline"
                         :value="getFloatWithPrecision(field.fieldname, row)"
                         :formattedValue="row[field.fieldname]"
-                        :disabled="Boolean(field.disabled)"
+                        :disabled="Boolean(field.read_only)"
                         @change="
                           fieldChange(flt($event.target.value), field, row)
                         "
@@ -300,7 +294,7 @@
                         :formattedValue="
                           getFormattedCurrency(field.fieldname, row, parentDoc)
                         "
-                        :disabled="Boolean(field.disabled)"
+                        :disabled="Boolean(field.read_only)"
                         @change="
                           fieldChange(flt($event.target.value), field, row)
                         "
@@ -309,7 +303,7 @@
                         v-else-if="field.fieldtype === 'Duration'"
                         :value="row[field.fieldname]"
                         variant="outline"
-                        :disabled="Boolean(field.disabled)"
+                        :disabled="Boolean(field.read_only)"
                         @change="(v) => fieldChange(v, field, row)"
                       />
                       <div
@@ -319,7 +313,7 @@
                         <RatingInput
                           class="flex-nowrap overflow-x-auto px-2"
                           :value="row[field.fieldname]"
-                          :disabled="Boolean(field.disabled)"
+                          :disabled="Boolean(field.read_only)"
                           :max="field.options || 5"
                           @change="(v) => fieldChange(v, field, row)"
                         />
@@ -334,7 +328,7 @@
                           :icon="field.icon"
                           :theme="getButtonTheme(field.button_color)"
                           :variant="getButtonVariant(field.button_color)"
-                          :disabled="Boolean(field.disabled)"
+                          :disabled="Boolean(field.read_only)"
                           @click="handleButtonClick(field, row)"
                         />
                       </div>
@@ -352,7 +346,7 @@
                           :docname="row.name"
                           :fieldname="field.fieldname"
                           :imageOnly="field.fieldtype === 'Attach Image'"
-                          :disabled="Boolean(field.disabled)"
+                          :disabled="Boolean(field.read_only)"
                           @change="(v) => fieldChange(v, field, row)"
                         />
                       </div>
@@ -372,7 +366,7 @@
                           variant="ghost"
                           class="w-full"
                           :value="row[field.fieldname]"
-                          :disabled="Boolean(field.disabled)"
+                          :disabled="Boolean(field.read_only)"
                           @change="(v) => fieldChange(v, field, row)"
                         />
                       </div>
@@ -388,7 +382,7 @@
                           editorClass="w-full !min-h-[38px] !h-[38px]"
                           :value="row[field.fieldname]"
                           :placeholder="field.placeholder"
-                          :disabled="Boolean(field.disabled)"
+                          :disabled="Boolean(field.read_only)"
                           @change="(v) => fieldChange(v, field, row)"
                         />
                       </div>
@@ -399,7 +393,7 @@
                         variant="outline"
                         :options="getOptions(field.options)"
                         :placeholder="field.placeholder"
-                        :disabled="Boolean(field.disabled)"
+                        :disabled="Boolean(field.read_only)"
                         @update:modelValue="(v) => fieldChange(v, field, row)"
                       />
                       <FormControl
@@ -501,7 +495,6 @@ import { flt } from '@/utils/numberFormat.js'
 import { usersStore } from '@/stores/users'
 import { getMeta } from '@/stores/meta'
 import { parseLinkFilters } from '@/utils/fieldTransforms'
-import { isFetchedFromLink } from '@/utils/fetchFrom'
 import { createDocument } from '@/composables/document'
 import {
   FormControl,
@@ -571,11 +564,11 @@ function getRowFieldObj(field, row) {
   const colOverrides = ov[colKey]
   const rowOverrides = rowKey ? ov[rowKey] : null
 
+  if (!colOverrides && !rowOverrides) return field
+
   let merged = { ...field }
   if (colOverrides) Object.assign(merged, colOverrides)
   if (rowOverrides) Object.assign(merged, rowOverrides)
-
-  merged.disabled = Boolean(merged.read_only || isFetchedFromLink(merged, row))
   return merged
 }
 
@@ -785,7 +778,7 @@ const getOptions = (options) => {
     return options
   } else if (typeof options === 'string') {
     return options.split('\n').map((option) => {
-      return { label: __(option), value: option }
+      return { label: option, value: option }
     })
   } else {
     return []

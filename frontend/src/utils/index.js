@@ -492,10 +492,10 @@ export function convertSize(size) {
   return `${size?.toFixed(2)} ${units[unitIndex]}`
 }
 
-export function isImage(extension) {
-  if (!extension) return false
+export function isImage(extention) {
+  if (!extention) return false
   return ['png', 'jpg', 'jpeg', 'gif', 'svg', 'bmp', 'webp'].includes(
-    extension.toLowerCase(),
+    extention.toLowerCase(),
   )
 }
 

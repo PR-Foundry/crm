@@ -103,7 +103,7 @@ export function getMeta(doctype) {
           if (f.fieldtype === 'Select' && typeof f.options === 'string') {
             f.options = f.options.split('\n').map((option) => {
               return {
-                label: __(option),
+                label: option,
                 value: option,
               }
             })

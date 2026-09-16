@@ -27,11 +27,16 @@ class CRMEnrichmentSettings(Document):
 		allowed_domains: DF.Table[CRMEnrichmentDomain]
 		auto_enrich: DF.Check
 		blocked_domains: DF.Table[CRMEnrichmentDomain]
+		enable_deal: DF.Check
+		enable_lead: DF.Check
+		enable_organization: DF.Check
 		enabled: DF.Check
 		link_priority_order: DF.Table[CRMEnrichmentLinkPriority]
 		max_depth: DF.Int
 		max_download_bytes: DF.Int
 		max_pages: DF.Int
+		preview_max_pages: DF.Int
+		preview_timeout: DF.Int
 		request_timeout: DF.Int
 		retry_count: DF.Int
 		skip_patterns: DF.Table[CRMEnrichmentSkipPattern]

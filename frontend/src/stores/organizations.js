@@ -1,9 +1,12 @@
 import { defineStore } from 'pinia'
 import { createResource } from 'frappe-ui'
 import { reactive } from 'vue'
+import { useRouter } from 'vue-router'
 
 export const organizationsStore = defineStore('crm-organizations', () => {
   let organizationsByName = reactive({})
+
+  const router = useRouter()
 
   const organizations = createResource({
     url: 'crm.api.session.get_organizations',
@@ -17,12 +20,8 @@ export const organizationsStore = defineStore('crm-organizations', () => {
       return organizations
     },
     onError(error) {
-      const isAuthError = ['AuthenticationError', 'PermissionError'].includes(
-        error?.exc_type,
-      )
-
-      if (isAuthError) {
-        window.location.href = '/login?redirect-to=/crm'
+      if (error && error.exc_type === 'AuthenticationError') {
+        router.push('/login')
       }
     },
   })

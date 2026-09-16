@@ -131,14 +131,9 @@
 </template>
 
 <script setup>
-import { createResource, call, toast } from 'frappe-ui'
+import { createResource, call } from 'frappe-ui'
 import { useRouter } from 'vue-router'
 import { computed, ref } from 'vue'
-import {
-  markDocumentAsDeleted,
-  unmarkDocumentAsDeleted,
-  expireDeletionMarker,
-} from '@/data/document'
 
 const show = defineModel({ type: Boolean })
 const router = useRouter()
@@ -146,7 +141,6 @@ const props = defineProps({
   name: { type: String, required: true },
   doctype: { type: String, required: true },
   docname: { type: String, required: true },
-  title: { type: String, default: null },
   reload: { type: Function, default: null },
 })
 const viewControls = ref({
@@ -255,25 +249,10 @@ const removeDocLinks = () => {
 }
 
 const deleteDoc = async () => {
-  // Mark before the request starts: the backend's delete_doc fires a
-  // realtime doc_update event that can reach the still-mounted document
-  // resource before this awaited call resolves on the frontend.
-  markDocumentAsDeleted(props.doctype, props.docname)
-  try {
-    await call('frappe.client.delete', {
-      doctype: props.doctype,
-      name: props.docname,
-    })
-  } catch (err) {
-    unmarkDocumentAsDeleted(props.doctype, props.docname)
-    throw err
-  }
-  expireDeletionMarker(props.doctype, props.docname)
-  const label = props.title
-    ? `${props.docname} (${props.title})`
-    : props.docname
-  toast.success(__('{0} deleted successfully', [label]))
-  show.value = false
+  await call('frappe.client.delete', {
+    doctype: props.doctype,
+    name: props.docname,
+  })
   router.push({ name: props.name })
   props?.reload?.()
 }
